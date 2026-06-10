@@ -133,27 +133,39 @@
     async function loadTPS() {
         const now = Math.floor(Date.now() / 1000);
         const from = now - 60;
-        const res = await fetch(`${API}/transactions?limit=100&timestamp=gte:${from}&timestamp=lte:${now}&_=${Date.now()}`);
-        const data = await res.json();
-        const tps = (data.transactions.length / 60).toFixed(2);
-        document.getElementById('tps').textContent = `${tps} TPS`;
+        try {
+            const res = await fetch(`${API}/transactions?limit=100&timestamp=gte:${from}&timestamp=lte:${now}`);
+            const data = await res.json();
+            const tps = (data.transactions.length / 60).toFixed(2);
+            document.getElementById('tps').textContent = `${tps} TPS`;
+        } catch(e) {
+            document.getElementById('tps').textContent = 'N/A';
+        }
     }
 
     async function loadNodes() {
-        const res = await fetch(`${API}/network/nodes?limit=100&_=${Date.now()}`);
+    let allNodes = [];
+    let nextLink = `${API}/network/nodes?limit=25`;
+    
+    while (nextLink) {
+        const res = await fetch(nextLink);
         const data = await res.json();
-        document.getElementById('total-nodes').textContent = data.nodes.length;
-        const tbody = document.getElementById('nodes-table');
-        tbody.innerHTML = data.nodes.map(node => `
-            <tr>
-                <td>${node.node_id}</td>
-                <td>${node.description || 'N/A'}</td>
-                <td>${(node.stake / 1e8).toLocaleString()} ℏ</td>
-                <td>✅ Active</td>
-            </tr>
-        `).join('');
-        addNodeMarkers(data.nodes);
+        allNodes = allNodes.concat(data.nodes);
+        nextLink = data.links?.next ? `https://mainnet-public.mirrornode.hedera.com${data.links.next}` : null;
     }
+
+    document.getElementById('total-nodes').textContent = allNodes.length;
+    const tbody = document.getElementById('nodes-table');
+    tbody.innerHTML = allNodes.map(node => `
+        <tr>
+            <td>${node.node_id}</td>
+            <td>${node.description || 'N/A'}</td>
+            <td>${(node.stake / 1e8).toLocaleString()} ℏ</td>
+            <td>✅ Active</td>
+        </tr>
+    `).join('');
+    addNodeMarkers(allNodes);
+}
         // Map
         const nodeCoordinates = {
             'LG': [1.3521, 103.8198],
