@@ -157,9 +157,10 @@
         };
 
         const map = L.map('map').setView([20, 0], 2);
-        L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
-            attribution: '© Stadia Maps © OpenStreetMap',
-            maxZoom: 20
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap © CartoDB',
+            subdomains: 'abcd',
+            maxZoom: 19
         }).addTo(map);
 
         function addNodeMarkers(nodes) {
