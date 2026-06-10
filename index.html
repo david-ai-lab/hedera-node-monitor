@@ -38,6 +38,16 @@
         /* Map */
         #map { height: 450px; border-radius: 8px; }
 
+        /* Node labels */
+        .node-label {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            color: #00b388;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
         /* Table */
         .table-wrapper { max-height: 450px; overflow-y: auto; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; }
@@ -62,6 +72,10 @@
         <div class="card">
             <h3>Released Supply</h3>
             <div class="value" id="released-supply">Loading...</div>
+        </div>
+        <div class="card">
+            <h3>Transactions Per Second</h3>
+            <div class="value" id="tps">Loading...</div>
         </div>
     </div>
 
@@ -116,6 +130,16 @@
             document.getElementById('released-supply').textContent = `${released.toLocaleString()} ℏ (${pct}%)`;
         }
 
+        // TPS
+        async function loadTPS() {
+            const now = Math.floor(Date.now() / 1000);
+            const from = now - 60;
+            const res = await fetch(`${API}/transactions?limit=100&timestamp=gte:${from}&timestamp=lte:${now}`);
+            const data = await res.json();
+            const tps = (data.transactions.length / 60).toFixed(2);
+            document.getElementById('tps').textContent = `${tps} TPS`;
+        }
+
         // Nodes
         async function loadNodes() {
             const res = await fetch(`${API}/network/nodes?limit=25`);
@@ -161,6 +185,7 @@
             maxBounds: [[-90, -180], [90, 180]],
             maxBoundsViscosity: 1.0
         }).setView([20, 10], 2);
+
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap © CartoDB',
             subdomains: 'abcd',
@@ -173,7 +198,8 @@
                 const desc = node.description || '';
                 const company = Object.keys(nodeCoordinates).find(key => desc.includes(key));
                 if (company) {
-                    L.circleMarker(nodeCoordinates[company], {
+                    const coords = nodeCoordinates[company];
+                    L.circleMarker(coords, {
                         radius: 8,
                         fillColor: '#00b388',
                         color: '#ffffff',
@@ -182,6 +208,17 @@
                     })
                     .addTo(map)
                     .bindPopup(`<b>${desc}</b><br>Node ID: ${node.node_id}<br>Stake: ${(node.stake / 1e8).toLocaleString()} ℏ`);
+
+                    // Label con nombre de empresa
+                    L.tooltip({
+                        permanent: true,
+                        direction: 'top',
+                        offset: [0, -10],
+                        className: 'node-label'
+                    })
+                    .setContent(company)
+                    .setLatLng(coords)
+                    .addTo(map);
                 }
             });
         }
@@ -195,11 +232,13 @@
             if (countdown < 0) {
                 countdown = 30;
                 loadSupply();
+                loadTPS();
                 loadNodes();
             }
         }
 
         loadSupply();
+        loadTPS();
         loadNodes();
         updateCountdown();
         setInterval(updateCountdown, 1000);
