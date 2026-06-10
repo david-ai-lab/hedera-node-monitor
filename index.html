@@ -48,4 +48,112 @@
                 <th>Stake</th>
                 <th>Status</th>
             </tr>
-        </th
+        </thead>
+        <tbody id="nodes-table">
+            <tr><td colspan="4">Loading nodes...</td></tr>
+        </tbody>
+    </table>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const API = 'https://mainnet-public.mirrornode.hedera.com/api/v1';
+
+        async function loadSupply() {
+            const res = await fetch(`${API}/network/supply`);
+            const data = await res.json();
+            document.getElementById('total-supply').textContent = 
+                (data.total_supply / 1e8).toLocaleString() + ' ℏ';
+            document.getElementById('released-supply').textContent = 
+                (data.released_supply / 1e8).toLocaleString() + ' ℏ';
+        }
+
+        async function loadNodes() {
+            const res = await fetch(`${API}/network/nodes?limit=25`);
+            const data = await res.json();
+            
+            document.getElementById('total-nodes').textContent = data.nodes.length;
+            
+            const tbody = document.getElementById('nodes-table');
+            tbody.innerHTML = data.nodes.map(node => `
+                <tr>
+                    <td>${node.node_id}</td>
+                    <td>${node.description || 'N/A'}</td>
+                    <td>${(node.stake / 1e8).toLocaleString()} ℏ</td>
+                    <td>✅ Active</td>
+                </tr>
+            `).join('');
+
+            addNodeMarkers(data.nodes);
+        }
+
+        const nodeCoordinates = {
+            'LG': [1.3521, 103.8198],
+            'Swirlds': [41.8781, -93.0977],
+            'Nomura': [35.6762, 139.6503],
+            'Google': [60.1699, 24.9384],
+            'Zain': [29.3759, 47.9774],
+            'Magalu': [-23.5505, -46.6333],
+            'DLA Piper': [60.1699, 24.9384],
+            'Tata': [50.1109, 8.6821],
+            'IBM': [30.2672, -97.7431],
+            'Deutsche Telekom': [52.5200, 13.4050],
+            'Dentons': [50.6942, 3.1746],
+            'Australian Payments': [-33.8688, 151.2093],
+            'EDF': [48.8566, 2.3522],
+            'Shinhan': [51.5074, -0.1278],
+            'FedEx': [35.1495, -90.0490],
+            'Boeing': [47.6062, -122.3321],
+            'Ubisoft': [48.8566, 2.3522],
+            'ServiceNow': [37.3861, -122.0839],
+            'Avery Dennison': [33.7490, -84.3880]
+        };
+
+        const map = L.map('map').setView([20, 0], 2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        function addNodeMarkers(nodes) {
+            nodes.forEach(node => {
+                const desc = node.description || '';
+                const company = Object.keys(nodeCoordinates).find(key => desc.includes(key));
+                if (company) {
+                    const coords = nodeCoordinates[company];
+                    L.circleMarker(coords, {
+                        radius: 8,
+                        fillColor: '#00b388',
+                        color: '#ffffff',
+                        weight: 2,
+                        fillOpacity: 0.9
+                    })
+                    .addTo(map)
+                    .bindPopup(`
+                        <b>${desc}</b><br>
+                        Node ID: ${node.node_id}<br>
+                        Stake: ${(node.stake / 1e8).toLocaleString()} ℏ
+                    `);
+                }
+            });
+        }
+
+        let countdown = 30;
+
+        function updateCountdown() {
+            document.getElementById('last-update').textContent = 
+                `Last update: ${new Date().toLocaleTimeString('en-GB')} — Refreshing in ${countdown}s`;
+            countdown--;
+            if (countdown < 0) {
+                countdown = 30;
+                loadSupply();
+                loadNodes();
+            }
+        }
+
+        loadSupply();
+        loadNodes();
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>
