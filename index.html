@@ -157,14 +157,15 @@
         };
 
         const map = L.map('map', {
-                                    worldCopyJump: false,
-                                    maxBounds: [[-90, -180], [90, 180]],
-                                    maxBoundsViscosity: 1.0
-                                }).setView([20, 10], 2);
+            worldCopyJump: false,
+            maxBounds: [[-90, -180], [90, 180]],
+            maxBoundsViscosity: 1.0
+        }).setView([20, 10], 2);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap © CartoDB',
             subdomains: 'abcd',
-            maxZoom: 19
+            maxZoom: 19,
+            noWrap: true
         }).addTo(map);
 
         function addNodeMarkers(nodes) {
