@@ -121,42 +121,39 @@
 
         // Supply
         async function loadSupply() {
-            const res = await fetch(`${API}/network/supply`);
-            const data = await res.json();
-            const total = data.total_supply / 1e8;
-            const released = data.released_supply / 1e8;
-            const pct = ((released / total) * 100).toFixed(1);
-            document.getElementById('total-supply').textContent = total.toLocaleString() + ' ℏ';
-            document.getElementById('released-supply').textContent = `${released.toLocaleString()} ℏ (${pct}%)`;
-        }
+        const res = await fetch(`${API}/network/supply?_=${Date.now()}`);
+        const data = await res.json();
+        const total = data.total_supply / 1e8;
+        const released = data.released_supply / 1e8;
+        const pct = ((released / total) * 100).toFixed(1);
+        document.getElementById('total-supply').textContent = total.toLocaleString() + ' ℏ';
+        document.getElementById('released-supply').textContent = `${released.toLocaleString()} ℏ (${pct}%)`;
+    }
 
-        // TPS
-        async function loadTPS() {
-            const now = Math.floor(Date.now() / 1000);
-            const from = now - 60;
-            const res = await fetch(`${API}/transactions?limit=100&timestamp=gte:${from}&timestamp=lte:${now}`);
-            const data = await res.json();
-            const tps = (data.transactions.length / 60).toFixed(2);
-            document.getElementById('tps').textContent = `${tps} TPS`;
-        }
+    async function loadTPS() {
+        const now = Math.floor(Date.now() / 1000);
+        const from = now - 60;
+        const res = await fetch(`${API}/transactions?limit=100&timestamp=gte:${from}&timestamp=lte:${now}&_=${Date.now()}`);
+        const data = await res.json();
+        const tps = (data.transactions.length / 60).toFixed(2);
+        document.getElementById('tps').textContent = `${tps} TPS`;
+    }
 
-        // Nodes
-        async function loadNodes() {
-            const res = await fetch(`${API}/network/nodes?limit=25`);
-            const data = await res.json();
-            document.getElementById('total-nodes').textContent = data.nodes.length;
-            const tbody = document.getElementById('nodes-table');
-            tbody.innerHTML = data.nodes.map(node => `
-                <tr>
-                    <td>${node.node_id}</td>
-                    <td>${node.description || 'N/A'}</td>
-                    <td>${(node.stake / 1e8).toLocaleString()} ℏ</td>
-                    <td>✅ Active</td>
-                </tr>
-            `).join('');
-            addNodeMarkers(data.nodes);
-        }
-
+    async function loadNodes() {
+        const res = await fetch(`${API}/network/nodes?limit=100&_=${Date.now()}`);
+        const data = await res.json();
+        document.getElementById('total-nodes').textContent = data.nodes.length;
+        const tbody = document.getElementById('nodes-table');
+        tbody.innerHTML = data.nodes.map(node => `
+            <tr>
+                <td>${node.node_id}</td>
+                <td>${node.description || 'N/A'}</td>
+                <td>${(node.stake / 1e8).toLocaleString()} ℏ</td>
+                <td>✅ Active</td>
+            </tr>
+        `).join('');
+        addNodeMarkers(data.nodes);
+    }
         // Map
         const nodeCoordinates = {
             'LG': [1.3521, 103.8198],
